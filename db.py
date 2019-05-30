@@ -7,7 +7,7 @@ def get_redis_client():
 
 if __name__ == '__main__':
     # 测试连接
-    redis_cli: redis = get_redis_client()
+    redis_cli = get_redis_client()
     # rs: bool = redis_cli.set("name", "bob")
     # rs1: bytes = redis_cli.get('name')
     # print(rs, rs1.decode('utf-8'))

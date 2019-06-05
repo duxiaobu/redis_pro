@@ -3,7 +3,7 @@ import time
 from db import get_redis_client
 
 
-class ArticlVote(object):
+class ArticleVote(object):
     # 一周的秒数
     ONE_WEEK_IN_SECONDS = 7 * 86400
     # 一票的分数
@@ -32,7 +32,7 @@ class ArticlVote(object):
             # 将用户添加到该文章已投票用户列表中去，根据返回bool判断是否投过票
             if self.conn.sadd('voted:' + article_id, user):
                 # 增加对应文章的分数
-                self.conn.zincrby(name='score:', value=article, amount=VOTE_SCORE)
+                self.conn.zincrby(name='score:', value=article, amount=self.VOTE_SCORE)
                 # 增加对应文章的票数
                 self.conn.hincrby(article, 'votes', 1)
         except Exception as e:
@@ -52,7 +52,7 @@ class ArticlVote(object):
         # 将作者添加到以投票用户组，并设置过期时间为一周
         voted = 'voted:' + article_id
         self.conn.sadd(voted, user)
-        self.conn.expire(voted, ONE_WEEK_IN_SECONDS)
+        self.conn.expire(voted, self.ONE_WEEK_IN_SECONDS)
 
         # 添加文章，添加文章分数和时间有序集合
         now = time.time()
@@ -65,7 +65,7 @@ class ArticlVote(object):
             'votes': 1
         })
 
-        self.conn.zadd('score:', article, now + VOTE_SCORE)
+        self.conn.zadd('score:', article, now + self.VOTE_SCORE)
         self.conn.sadd('time:', article, now)
 
         return article_id
@@ -78,15 +78,15 @@ class ArticlVote(object):
         :return:
         """
         # 获取起始页
-        start = (page - 1) * ARTICLE_PER_PAGE
-        end = start + ARTICLE_PER_PAGE - 1
+        start = (page - 1) * self.ARTICLE_PER_PAGE
+        end = start + self.ARTICLE_PER_PAGE - 1
 
         ids = self.conn.zrevrange(order, start, end)
         # 文章列表
         articles = []
-        for id in ids:
-            article_detail = self.conn.hgetall(id)
-            article_detail['id'] = id
+        for _id in ids:
+            article_detail = self.conn.hgetall(_id)
+            article_detail['id'] = _id
             articles.append(article_detail)
 
         return articles
@@ -103,11 +103,30 @@ class ArticlVote(object):
         # 将该文章添加到所属分组中
         for group in add_group:
             self.conn.sadd('group:' + group, article)
+
         # 将文章从分组中移除
         for group in remove_group:
             self.conn.srem('group:' + group, article)
 
+    def get_group_articles(self, group: str, page: int, order: str = 'score:'):
+        """
+        获取分组文章
+        :param group:
+        :param page:
+        :param order:
+        :return:
+        """
+        key = order + group
+        # 如果缓存中没有该数据，就去redis中获取
+        if not self.conn.exists(key):
+            self.conn.zinterstore(key, ['group:' + group, order], aggregate='max')
+            # 将结果缓存60s
+            self.conn.expire(key, 60)
+
+        return self.get_articles(page, key)
+
 
 if __name__ == '__main__':
     conn = get_redis_client()
-    article_vote = ArticlVote(conn)
+    conn.zinterstore()
+    article_vote = ArticleVote(conn)

@@ -35,6 +35,8 @@ class ArticleVote(object):
                 self.conn.zincrby(name='score:', value=article, amount=self.VOTE_SCORE)
                 # 增加对应文章的票数
                 self.conn.hincrby(article, 'votes', 1)
+                return True
+            return False
         except Exception as e:
             print(e)
 
@@ -128,5 +130,7 @@ class ArticleVote(object):
 
 if __name__ == '__main__':
     conn = get_redis_client()
-    conn.zinterstore()
     article_vote = ArticleVote(conn)
+    # 36号用户投票10086
+    result = article_vote.article_vote('user:36', 'artile:10086')
+    print(result)

@@ -130,7 +130,8 @@ class ArticleVote(object):
 
 if __name__ == '__main__':
     conn = get_redis_client()
+    conn.zremrangebyrank()
     article_vote = ArticleVote(conn)
     # 36号用户投票10086
-    result = article_vote.article_vote('user:36', 'artile:10086')
+    result = article_vote.article_vote('user:36', 'article:10086')
     print(result)

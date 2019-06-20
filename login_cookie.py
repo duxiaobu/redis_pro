@@ -2,6 +2,7 @@ import time
 
 
 class LoginCookie(object):
+
     def __init__(self, conn):
         self.conn = conn
 

@@ -13,6 +13,7 @@ if __name__ == '__main__':
     # print(rs, rs1.decode('utf-8'))
 
     # 实例化命令管道
+    # git操作
     pipe = redis_cli.pipeline()
     try:
         # 开启事务
